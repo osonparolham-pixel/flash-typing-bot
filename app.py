@@ -7,18 +7,17 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, W
 from fastapi import FastAPI
 import uvicorn
 
-TOKEN = "8765127226:AAFAZzn9V7TVwsgWj-ihgzyEKGH_gIHHv1k"
-
+# Bot tokeni
+TOKEN = os.getenv("BOT_TOKEN", "8765127226:AAFAZzn9V7TVwsgWj-ihgzyEKGH_gIHHv1k")
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Render port talabini bajarish uchun kichik veb-server
 app = FastAPI()
 
 
 @app.get("/")
-def health_check():
-  return {"status": "Bot ishlayapti!"}
+def home():
+  return {"status": "Server ishlamoqda!"}
 
 
 @dp.message(Command("start"))
@@ -48,17 +47,13 @@ async def cmd_start(message: Message):
   )
 
 
-async def main():
-  logging.basicConfig(level=logging.INFO)
-
-  # Render beradigan PORT'ni olib serverni va botni birga yurgizamiz
-  port = int(os.getenv("PORT", 10000))
-  config = uvicorn.Config(app, host="0.0.0.0", port=port, log_level="info")
-  server = uvicorn.Server(config)
-
-  print("Bot va Veb-server ishga tushdi...")
-  await asyncio.gather(server.serve(), dp.start_polling(bot))
+# FastAPI ishga tushishi bilan bot polling ham birga yonadi
+@app.on_event("startup")
+async def startup_event():
+  asyncio.create_task(dp.start_polling(bot))
+  print("Telegram bot polling muvaffaqiyatli boshlandi!")
 
 
 if __name__ == "__main__":
-  asyncio.run(main())
+  port = int(os.getenv("PORT", 10000))
+  uvicorn.run("app:app", host="0.0.0.0", port=port)
