@@ -41,7 +41,8 @@ async def cmd_start(message: Message):
   await message.answer(
       f"Assalomu alaykum, <b>{message.from_user.full_name}</b>! 👋\n\n"
       "<b>ProTyping Studio</b> – professional tez yozish trenajyoriga xush kelibsiz.\n"
-      "Mashq qilish uchun quyidagi tugmani bosing:",
+      "Mashq qilish uchun quyidagi tugmani bosing:\n\n"
+      "⚠️ <i>Eslatma! Server uyg'onguncha 1 daqiqa kutishingizni so'raymiz.</i>",
       reply_markup=keyboard,
       parse_mode="HTML",
   )
