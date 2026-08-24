@@ -1,60 +1,56 @@
-import asyncio
-import logging
 import os
-from aiogram import Bot, Dispatcher
-from aiogram.filters import Command
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, WebAppInfo
-from fastapi import FastAPI
+import asyncio
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
 import uvicorn
+from aiogram import Bot, Dispatcher, types
+from aiogram.filters import Command
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
-# Bot tokeni
+# Bot tokeni va Render'dagi saytingiz manzili
 TOKEN = os.getenv("BOT_TOKEN", "8765127226:AAFAZzn9V7TVwsgWj-ihgzyEKGH_gIHHv1k")
+WEBAPP_URL = os.getenv("WEBAPP_URL", "https:/flash-typing.onrender.com")
+
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 app = FastAPI()
 
-
-@app.get("/")
-def home():
-  return {"status": "Server ishlamoqda!"}
-
-
+# 1. /start komandasi handler'i (Ikkala tugma bilan)
 @dp.message(Command("start"))
-async def cmd_start(message: Message):
-  web_app_url = "https://flash-typing.onrender.com"
-  keyboard = InlineKeyboardMarkup(
-      inline_keyboard=[
-          [
-              InlineKeyboardButton(
-                  text="⚡ ProTyping Studio'ni ochish",
-                  web_app=WebAppInfo(url=web_app_url),
-              )
-          ],
-          [
-              InlineKeyboardButton(
-                  text="🏆 Reytingni ko'rish", callback_data="leaderboard"
-              )
-          ],
-      ]
-  )
-  await message.answer(
-      f"Assalomu alaykum, <b>{message.from_user.full_name}</b>! 👋\n\n"
-      "<b>ProTyping Studio</b> – professional tez yozish trenajyoriga xush kelibsiz.\n"
-      "Mashq qilish uchun quyidagi tugmani bosing:\n\n"
-      "⚠️ <i>Eslatma! Server uyg'onguncha 1 daqiqa kutishingizni so'raymiz.</i>",
-      reply_markup=keyboard,
-      parse_mode="HTML",
-  )
+async def start_cmd(message: types.Message):
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="⚡ ProTyping Studio'ni ochish", web_app=WebAppInfo(url=WEBAPP_URL))
+        ],
+        [
+            InlineKeyboardButton(text="🏆 Reytingni ko'rish", callback_data="leaderboard_btn")
+        ]
+    ])
+    await message.answer(
+        f"Assalomu alaykum, {message.from_user.first_name}! ⚡ ProTyping Studio trenajyoriga xush kelibsiz.\n\nQuyidagi tugmalar orqali davom eting:",
+        reply_markup=kb
+    )
 
+# 2. Reyting tugmasi bosilganda ishlaydigan handler
+@dp.callback_query(lambda c: c.data == "leaderboard_btn")
+async def process_leaderboard(callback: types.CallbackQuery):
+    await callback.message.answer("🏆 Hozircha reyting jadvali bo'sh. Tez orada eng yaxshi natijalar shu yerda ko'rsatiladi! 🚀")
+    await callback.answer()
 
-# FastAPI ishga tushishi bilan bot polling ham birga yonadi
+# 3. FastAPI orqali index.html ni ochish
+@app.get("/", response_class=HTMLResponse)
+async def read_root():
+    if os.path.exists("index.html"):
+        with open("index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    return "ProTyping Studio ishga tushdi! index.html topilmadi."
+
+# 4. FastAPI ishga tushganda Bot polling'ni ham birga yuritish
 @app.on_event("startup")
-async def startup_event():
-  asyncio.create_task(dp.start_polling(bot))
-  print("Telegram bot polling muvaffaqiyatli boshlandi!")
-
+async def on_startup():
+    asyncio.create_task(dp.start_polling(bot))
 
 if __name__ == "__main__":
-  port = int(os.getenv("PORT", 10000))
-  uvicorn.run("app:app", host="0.0.0.0", port=port)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
