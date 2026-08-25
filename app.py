@@ -7,9 +7,9 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
-# Bot tokeni va Render'dagi saytingiz manzili
+# Bot tokeni va Render'dagi saytingiz manzili (slash belgisi to'g'rilandi)
 TOKEN = os.getenv("BOT_TOKEN", "8765127226:AAFAZzn9V7TVwsgWj-ihgzyEKGH_gIHHv1k")
-WEBAPP_URL = os.getenv("WEBAPP_URL", "https:/flash-typing.onrender.com")
+WEBAPP_URL = os.getenv("WEBAPP_URL", "https://flash-typing.onrender.com")
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
@@ -46,11 +46,16 @@ async def read_root():
             return f.read()
     return "ProTyping Studio ishga tushdi! index.html topilmadi."
 
-# 4. FastAPI ishga tushganda Bot polling'ni ham birga yuritish
+# 4. Ping marshruti (Server uxlab qolmasligi uchun)
+@app.get("/ping")
+async def ping():
+    return {"status": "alive"}
+
+# 5. FastAPI ishga tushganda Bot polling'ni ham birga yuritish
 @app.on_event("startup")
 async def on_startup():
     asyncio.create_task(dp.start_polling(bot))
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port)
+    uvicorn.run("app:app", host="0.0.0.0", port=port)
